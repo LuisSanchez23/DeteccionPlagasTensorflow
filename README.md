@@ -6,12 +6,12 @@ Este repositorio esta basado en el código "Tensorflow for poets 2" proveído po
 Sin embargo el código ha sido adaptado para cumplir el funcionamiento especifico del proyecto, el cual es identificar la presencia de roya en hojas de planta de café.
 Requerimientos técnicos:
 Ubuntu 16 o superior.
-Python 2.7 o superior
-Tensorflow 1.7 o superior
-Flask 1.0 o superior
+Python 2.7 o superior.
+Tensorflow 1.7 o superior.
+Flask 1.0 o superior.
 Para ejecutar el servidor colocal el archivo subirImagen.php en /var/www/html y dentro de el comprobar que el puerto coincida con el de la clase app.py ubicado en la raíz del proyecto.
 
-Para arrancar el servidor ejecutar "python app.py en su respecta ubicación"
+Para arrancar el servidor ejecutar "python app.py en su respecta ubicación".
 
 
 

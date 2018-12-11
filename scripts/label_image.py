@@ -1,28 +1,33 @@
-# Copyright 2017 The TensorFlow Authors. All Rights Reserved.
+# -*- coding: utf-8 -*-
+#==============================================================================
+#   Este script muestra el nivel de coincidencia de la imagen basado en
+#    el entrenamiento de clasificación del programa.
+#==============================================================================
 #
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-#     http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
-# ==============================================================================
+#==============================================================================
 
 from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
+import requests
+import json
 import argparse
 import sys
 import time
-
+#import os
 import numpy as np
 import tensorflow as tf
+
+#os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
+#Descargar imagen y renombrarla
+#url_imagen = "http://localhost/app/imagen/descargar.php"
+#url_imagen = "http://dialis.000webhostApp.com/imagen/descargar.php"
+#nombre_imagen = "imagen2.jpg"
+#imagen = requests.get(url_imagen).content
+#with open(nombre_imagen, 'wb') as handler:
+#  handler.write(imagen)
+
 
 def load_graph(model_file):
   graph = tf.Graph()
@@ -36,7 +41,7 @@ def load_graph(model_file):
   return graph
 
 def read_tensor_from_image_file(file_name, input_height=299, input_width=299,
-				input_mean=0, input_std=255):
+        input_mean=0, input_std=255):
   input_name = "file_reader"
   output_name = "normalized"
   file_reader = tf.read_file(file_name, input_name)
@@ -67,47 +72,15 @@ def load_labels(label_file):
     label.append(l.rstrip())
   return label
 
-if __name__ == "__main__":
-  file_name = "tf_files/flower_photos/daisy/3475870145_685a19116d.jpg"
-  model_file = "tf_files/retrained_graph.pb"
-  label_file = "tf_files/retrained_labels.txt"
+def calculo(file_name):
+  model_file = "../tf_files/retrained_graph.pb"
+  label_file = "../tf_files/retrained_labels.txt"
   input_height = 224
   input_width = 224
   input_mean = 128
   input_std = 128
   input_layer = "input"
   output_layer = "final_result"
-
-  parser = argparse.ArgumentParser()
-  parser.add_argument("--image", help="image to be processed")
-  parser.add_argument("--graph", help="graph/model to be executed")
-  parser.add_argument("--labels", help="name of file containing labels")
-  parser.add_argument("--input_height", type=int, help="input height")
-  parser.add_argument("--input_width", type=int, help="input width")
-  parser.add_argument("--input_mean", type=int, help="input mean")
-  parser.add_argument("--input_std", type=int, help="input std")
-  parser.add_argument("--input_layer", help="name of input layer")
-  parser.add_argument("--output_layer", help="name of output layer")
-  args = parser.parse_args()
-
-  if args.graph:
-    model_file = args.graph
-  if args.image:
-    file_name = args.image
-  if args.labels:
-    label_file = args.labels
-  if args.input_height:
-    input_height = args.input_height
-  if args.input_width:
-    input_width = args.input_width
-  if args.input_mean:
-    input_mean = args.input_mean
-  if args.input_std:
-    input_std = args.input_std
-  if args.input_layer:
-    input_layer = args.input_layer
-  if args.output_layer:
-    output_layer = args.output_layer
 
   graph = load_graph(model_file)
   t = read_tensor_from_image_file(file_name,
@@ -121,17 +94,101 @@ if __name__ == "__main__":
   input_operation = graph.get_operation_by_name(input_name);
   output_operation = graph.get_operation_by_name(output_name);
 
+  file = open('/var/www/html/imagen/respuesta.json','w')
+  #read_file = file.write('Hola')
+  #url_datos = "https://dialis.000webhostapp.com/respuesta.php?rest="
+  #url_datos = "http://localhost/app/respuesta.php?rest="
   with tf.Session(graph=graph) as sess:
     start = time.time()
     results = sess.run(output_operation.outputs[0],
                       {input_operation.outputs[0]: t})
     end=time.time()
-  results = np.squeeze(results)
+  resultado = np.squeeze(results)
 
-  top_k = results.argsort()[-5:][::-1]
-  labels = load_labels(label_file)
+  arreglo = resultado.argsort()[-5:][::-1]
+  etiqueta = load_labels(label_file)
+  print("================================================================================")
+  print("                     Detección de Roya en planta de café             ")
+  print("================================================================================")
 
-  print('\nEvaluation time (1-image): {:.3f}s\n'.format(end-start))
-  template = "{} (score={:0.5f})"
-  for i in top_k:
-    print(template.format(labels[i], results[i]))
+  print('Tiempo de evaluación (1 imagen): {:.3f}s\n'.format(end-start))
+  template = "{}{:0.5f}"
+  for i in arreglo:
+    print(template.format(etiqueta[i],resultado[i]))
+    #file.write(template.format("{"+etiqueta[i]+"}"+","+"{",resultado[i])+"} \n")
+    #file.write(template.format("",+resultado[0])+"\n")
+    #if(resultado[0]>0.5)
+    temporal=resultado[0]
+    flotante = (float(temporal)*100)
+    redondo = str(int(round(flotante,0)))
+
+  file.write('"'+str(redondo)+'"'+"\n")
+  print('"'+str(redondo)+'"')
+    
+  
+  return redondo
+
+if __name__ == "__main__":
+  #file_name = "tf_files/flower_photos/daisy/3475870145_685a19116d.jpg"
+  model_file = "tf_files/retrained_graph.pb"
+  label_file = "tf_files/retrained_labels.txt"
+  input_height = 224
+  input_width = 224
+  input_mean = 128
+  input_std = 128
+  input_layer = "input"
+  output_layer = "final_result"
+
+  parser = argparse.ArgumentParser()
+  parser.add_argument("--image", help="imagen a procesar")
+  args = parser.parse_args()
+
+  if args.image:
+    file_name = args.image
+
+  graph = load_graph(model_file)
+  t = read_tensor_from_image_file(file_name,
+                                  input_height=input_height,
+                                  input_width=input_width,
+                                  input_mean=input_mean,
+                                  input_std=input_std)
+
+  input_name = "import/" + input_layer
+  output_name = "import/" + output_layer
+  input_operation = graph.get_operation_by_name(input_name);
+  output_operation = graph.get_operation_by_name(output_name);
+
+  file = open('/var/www/html/imagen/respuesta.json','w')
+  #read_file = file.write('Hola')
+  #url_datos = "https://dialis.000webhostapp.com/respuesta.php?rest="
+  url_datos = "http://localhost/app/respuesta.php?rest="
+  with tf.Session(graph=graph) as sess:
+    start = time.time()
+    results = sess.run(output_operation.outputs[0],
+                      {input_operation.outputs[0]: t})
+    end=time.time()
+  resultado = np.squeeze(results)
+
+  arreglo = resultado.argsort()[-5:][::-1]
+  etiqueta = load_labels(label_file)
+  print("================================================================================")
+  print("                     Detección de Roya en planta de café             ")
+  print("================================================================================")
+
+  print('Tiempo de evaluación (1 imagen): {:.3f}s\n'.format(end-start))
+  template = "{}{:0.5f}"
+  for i in arreglo:
+    print(template.format(etiqueta[i],resultado[i]))
+    #file.write(template.format("{"+etiqueta[i]+"}"+","+"{",resultado[i])+"} \n")
+    #file.write(template.format("",+resultado[0])+"\n")
+    #if(resultado[0]>0.5)
+    temporal=resultado[0]
+    flotante = (float(temporal)*100)
+    redondo = int(round(flotante,0))
+    
+  
+  print('"'+str(redondo)+'"'+"\n")
+  resp = requests.get(url_datos+ str(redondo))
+  data = resp.json
+  file.write('"'+str(redondo)+'"')
+  file.close()
